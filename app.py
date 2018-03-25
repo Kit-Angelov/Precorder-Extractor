@@ -2,16 +2,16 @@
     App
 """
 
-from PyQt5.QtWidgets import (QHBoxLayout, QPushButton, QSizePolicy)
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import QUrl
-from controllers.playerControls import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 from controllers.appControls import *
 from vlcMedia import *
 import os
 from controllers import utils
 from config import base_dir
 from settingsWindow import SettingsWindow
+from logsWindow import LogsWindow
 
 
 class Player(QMainWindow):
@@ -27,7 +27,7 @@ class Player(QMainWindow):
         self.currentHeight = self.height
         self.currentCP = QPoint(0, 0)
         self.screenSize = QDesktopWidget().screenGeometry(-1)
-        self.current_epg = None
+        self.current_epg = {}
         self.current_epg_obj = None
         self.custom_epg = False
         self.child_epg = None
@@ -40,14 +40,23 @@ class Player(QMainWindow):
         self.waitingFramePath = config.lastFramePath
         self.timePostitonSecond = 0
         self.listExtractingPlayers = []
+        self.listStoringPlayers = []
         self.updateWindowState = False
         self.media_state = False
+        self.settingsWindow = SettingsWindow()
+        self.logsWindow = LogsWindow()
 
-        # self.settingsWindow = SettingsWindow()
-
+        self.initLabels()
         self.initVLC()
         self.registerObj()
         self.initUI()
+
+    def initLabels(self):
+        self.connectLabel = QLabel()
+        self.connectLabel.hide()
+        self.connectLabel.setText("Failed to connect in accordance with the settings")
+        self.connectLabel.setStyleSheet('color: gray; font-size: 18pt;')
+        self.connectLabel.setAlignment(Qt.AlignCenter)
 
     def initVLC(self):
         self.vlcPlayer = VlcPlayer()
@@ -66,7 +75,7 @@ class Player(QMainWindow):
         self.setAttribute(Qt.WA_NoSystemBackground, True)
         self.setStyleSheet("background: transparent;")
 
-        self.initSysTray()
+        # self.initSysTray()
 
         qml_dir = os.path.join(base_dir, 'views')
         self.topElem = QmlContainer(height=40)
@@ -75,7 +84,7 @@ class Player(QMainWindow):
         self.topContainer = self.topElem.container
 
         self.leftElem = QmlContainer(width=250)
-        self.setQmlContext(self.leftElem, 'PlayerControls', self.playerControls)
+        self.setQmlContext(self.leftElem, 'PlayerControls', self.videoControls)
         self.setQmlContext(self.leftElem, 'ListSegmentPostiton', self.listSegmentPostiton)
         self.setQmlContext(self.leftElem, 'FocusState', self.focusState)
         self.setQmlContext(self.leftElem, 'ListChannels', self.listChannels)
@@ -85,12 +94,11 @@ class Player(QMainWindow):
         self.leftContainer = self.leftElem.container
 
         self.rightElem = QmlContainer(width=250)
-        self.setQmlContext(self.rightElem, 'PlayerControls', self.playerControls)
+        self.setQmlContext(self.rightElem, 'PlayerControls', self.videoControls)
         self.setQmlContext(self.rightElem, 'SelectedEPG', self.selectedEPG)
         self.setQmlContext(self.rightElem, 'CustomEpgControls', self.customEpgControls)
         self.setQmlContext(self.rightElem, 'ListSegmentPostiton', self.listSegmentPostiton)
         self.setQmlContext(self.rightElem, 'ListChannels', self.listChannels)
-        self.setQmlContext(self.rightElem, 'Logs', self.logs)
         # self.rightElem.quickView.setSource(QUrl(os.path.join(qml_dir, 'rightBar.qml')))
         self.rightElem.quickView.setSource(QUrl('views/rightBar.qml'))
         self.rightContainer = self.rightElem.container
@@ -98,13 +106,16 @@ class Player(QMainWindow):
         self.middleElem = QmlContainer(height=195)
         self.setQmlContext(self.middleElem, 'VideoTimer', self.playerTimer)
         self.setQmlContext(self.middleElem, 'VideoSlider', self.videoSlider)
-        self.setQmlContext(self.middleElem, 'PlayerControls', self.playerControls)
         self.setQmlContext(self.middleElem, 'VideoControls', self.videoControls)
         self.setQmlContext(self.middleElem, 'FocusState', self.focusState)
         self.setQmlContext(self.middleElem, 'Status', self.status)
-        # self.middleElem.quickView.setSource(QUrl(os.path.join(qml_dir, 'middleBar.qml')))
         self.middleElem.quickView.setSource(QUrl('views/middleBar.qml'))
         self.middleContainer = self.middleElem.container
+
+        self.setQmlContext(self.logsWindow, 'AppLogs', self.appLogs)
+        self.logsWindow.quickView.setSource(QUrl('views/logs.qml'))
+        self.setQmlContext(self.settingsWindow, 'AppSettings', self.appSettings)
+        self.settingsWindow.quickView.setSource(QUrl('views/settings.qml'))
 
         self.widget = QWidget(self)
 
@@ -129,6 +140,7 @@ class Player(QMainWindow):
 
         self.middleGrid.addWidget(self.playerWidget, 0, 0)
         self.middleGrid.addWidget(self.pauseBackFrame, 0, 0)
+        self.middleGrid.addWidget(self.connectLabel, 0, 0)
         self.pauseBackFrame.setVisible(False)
 
         self.middleGrid.addWidget(self.middleContainer, 1, 0)
@@ -171,10 +183,12 @@ class Player(QMainWindow):
     def registerObj(self):
         self.playerTimer = VideoTimer(mainWindow=self)
         self.videoSlider = VideoSlider(mainWindow=self)
-        self.listChannels = ListChannels()
+        self.listChannels = ListChannels(self.connectLabel)
         self.listEpg = ListEpg()
-        self.listEpg.setEpg(address=self.listChannels._channels[0]._channel_address)
-        self.playerControls = PlayerControls(self)
+        try:
+            self.listEpg.setEpg(address=self.listChannels._channels[0]._channel_address)
+        except:
+            pass
         self.windowControls = WindowControls(self)
         self.videoControls = VideoControls(self)
         self.selectedEPG = SelectedEPG()
@@ -182,7 +196,8 @@ class Player(QMainWindow):
         self.customEpgControls = CustomEpgControls(self)
         self.focusState = FocusState()
         self.status = Status()
-        self.logs = Logs()
+        self.appLogs = AppLogs(self.logsWindow)
+        self.appSettings = AppSettings(self, self.settingsWindow)
 
     def setQmlContext(self, elem, name_obj, obj):
         elem.quickView.engine().rootContext().setContextProperty(name_obj, obj)
@@ -235,11 +250,22 @@ class Player(QMainWindow):
                 item.get('segment').changeState(2)
         for item in self.listExtractingPlayers:
             if item.get('segment')._stateDL == 1:
-                self.playerControls.changeExtractingState(1)
+                self.videoControls.changeExtractingState(1)
                 break
             else:
-                self.playerControls.changeExtractingState(0)
-        self.logs.updateLogs()
+                self.videoControls.changeExtractingState(0)
+
+        for item in self.listStoringPlayers:
+            if item.get('rec').state:
+                item.get('segment').changeStateStore(2)
+        for item in self.listStoringPlayers:
+            if item.get('segment')._stateST == 1:
+                self.videoControls.changeStoringState(1)
+                break
+            else:
+                self.videoControls.changeStoringState(0)
+
+        self.appLogs.updateLogs()
 
     def createFrame(self):
         edgeHeight = 3

@@ -40,10 +40,19 @@ def stopTimeSecond(timePosition):
     timePosition = 0
 
 
-def timeInt2Str(current_time):
-    absHours = current_time // 3600000
-    absMinutes = current_time // 60000
-    absSeconds = current_time // 1000
+def timeInt2Str(startTimestamp, current_time):
+    rel_time = int(current_time)
+    if startTimestamp is not 0 and current_time is not 0:
+        dateStr = datetime.datetime.fromtimestamp(startTimestamp)
+        timeStr = dateStr.time()
+        curHour = timeStr.hour
+        curMinute = timeStr.minute
+        curSecond = timeStr.second
+        curSeconds = (curHour * 3600) + (curMinute * 60) + curSecond
+        rel_time = int(current_time) + int(curSeconds)
+    absHours = rel_time // 3600
+    absMinutes = rel_time // 60
+    absSeconds = rel_time // 1
     hours = absHours
     if int(absMinutes) < 60:
         minutes = str(int(absMinutes))
@@ -64,7 +73,12 @@ def timeInt2Str(current_time):
     if int(seconds) < 10:
         seconds = "0" + str(int(seconds))
 
-    return hours + ":" + minutes + ":" + seconds
+    return str(hours) + ":" + str(minutes) + ":" + str(seconds)
+
+
+def timestamp2str(valTimestamp):
+    valTimeStr = datetime.datetime.fromtimestamp(valTimestamp).time()
+    return str(valTimeStr)[:8]
 
 
 def clearWaitingFrame():
@@ -77,7 +91,6 @@ def clearWaitingFrame():
 def setVideoPos(mainWindow,
                 sliderPosition=None,
                 shiftValue=None, shiftDir=None):
-
     if sliderPosition is not None and shiftValue is None and shiftDir is None:
         changePosVideo(mainWindow, sliderPosition)
 
@@ -104,7 +117,7 @@ def changePosVideo(mainWindow, sliderPosition):
                  'endTimesTamp': cur_epg.get('endTimesTamp'),
                  'recorder': cur_epg.get('recorder')}
     mainWindow.child_epg = child_epg
-    epg_url = '{0}{1}.record?from={2}&to={3}'.format(config.mediahost, child_epg.get('recorder'),
+    epg_url = '{0}{1}.record?from={2}&to={3}'.format(config.getMediaUrl(), child_epg.get('recorder'),
                                                      str(child_epg.get('startTimesTamp')),
                                                      str(child_epg.get('endTimesTamp')))
     mainWindow.vlcPlayer.mediaplayer.pause()

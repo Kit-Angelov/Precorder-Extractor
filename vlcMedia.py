@@ -19,8 +19,9 @@ import threading
 
 class VlcRecorder():
 
-    def __init__(self, mainWindow):
+    def __init__(self, mainWindow, save_path):
         self.mainWindow = mainWindow
+        self.save_path = save_path
 
     def getFromSource(self, sourcUrl=None, sourceName=None):
         self.instance = vlc.Instance()
@@ -48,7 +49,7 @@ class VlcRecorder():
         for item in listExtracted:
             if item.startTimestamp != 0 and item.endTimestamp != 0 and item not in old_items:
 
-                url = '{0}{1}.record?from={2}&to={3}'.format(config.mediahost,
+                url = '{0}{1}.record?from={2}&to={3}'.format(config.getMediaUrl(),
                                                              str(item.recorder),
                                                              str(int(item.startTimestamp)),
                                                              str(int(item.endTimestamp)))
@@ -59,10 +60,11 @@ class VlcRecorder():
                 name = '_'.join(str(name).split('.'))
                 name = '_'.join([str(name), startTime, endTime])
                 home = expanduser("~")
-                dir_to_save = os.path.join(home, config.temp_media)
+                # dir_to_save = os.path.join(home, config.temp_media)
+                dir_to_save = self.save_path
                 if not os.path.exists(dir_to_save):
                     os.mkdir(dir_to_save)
-                path_to_save = os.path.join(dir_to_save, '{}.mpg'.format(name))
+                path_to_save = os.path.join(dir_to_save, '{}.ts'.format(name))
                 # rec_instance = vlc.Instance('--sout=file/ts:{0}'.format(path_to_save))
                 # media = rec_instance.media_new(url)
                 # rec = rec_instance.media_player_new()
@@ -74,13 +76,53 @@ class VlcRecorder():
                 downloader.start()
         self.mainWindow.listSegmentPostiton.update()
 
+    def store(self, listSegments):
+        # self.mainWindow.listExtractingPlayers = []
+        old_stored = self.mainWindow.listStoringPlayers
+        old_items = []
+        for elem in old_stored:
+            old_items.append(elem.get('segment'))
+        listStored = listSegments
+        for item in listStored:
+            if item.startTimestamp != 0 and item.endTimestamp != 0 and item not in old_items:
+
+                url = '{0}{1}.record?from={2}&to={3}'.format(config.getMediaUrl(),
+                                                             str(item.recorder),
+                                                             str(int(item.startTimestamp)),
+                                                             str(int(item.endTimestamp)))
+                startTime = '_'.join(str(item.startTime).split(':'))
+                endTime = '_'.join(str(item.endTime).split(':'))
+                name = '_'.join(str(item.title).split(' '))
+                name = '_'.join(str(name).split(':'))
+                name = '_'.join(str(name).split('.'))
+                name = '_'.join([str(name), startTime, endTime])
+                home = expanduser("~")
+                # dir_to_save = os.path.join(home, config.temp_media)
+                dir_to_save = self.save_path
+                if not os.path.exists(dir_to_save):
+                    os.mkdir(dir_to_save)
+                path_to_save = os.path.join(dir_to_save, '{}.ts'.format(name))
+                # rec_instance = vlc.Instance('--sout=file/ts:{0}'.format(path_to_save))
+                # media = rec_instance.media_new(url)
+                # rec = rec_instance.media_player_new()
+                # rec.set_media(media)
+                # rec.play()
+                downloader = Downloader(url, path_to_save)
+                item.changeStateStore(1)
+                self.mainWindow.listStoringPlayers.append({'rec': downloader, 'segment': item})
+                downloader.start()
+        self.mainWindow.listSegmentPostiton.update()
+
 
 class VlcPlayer:
 
     def __init__(self):
-        self.instance = vlc.Instance("--network-caching=1000 --no-snapshot-preview --no-osd")
+        try:
+            os.remove('vlc.log')
+        except:
+            pass
+        self.instance = vlc.Instance("--verbose=2 --network-caching=1000 --no-snapshot-preview --no-osd --file-logging --logfile=vlc.log")
         self.mediaplayer = self.instance.media_player_new()
-        self.mediaplayer.audio_set_volume(100)
 
     def setMedia(self, mediaFile):
 

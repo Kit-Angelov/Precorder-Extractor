@@ -6,13 +6,13 @@ from vlcMedia import *
 import os
 
 
-class SettingsWindow(QWidget):
+class LogsWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowFlags(Qt.FramelessWindowHint)
         self.width = 400
-        self.height = 350
+        self.height = 600
         self.resize(self.width, self.height)
+        self.setWindowFlags(Qt.FramelessWindowHint)
         self.quickView = QQuickView()
         self.quickView.setResizeMode(QQuickView.SizeRootObjectToView)
         self.container = QWidget.createWindowContainer(self.quickView)

@@ -278,7 +278,7 @@ Pane{
                                 hoverEnabled: true
                                 anchors.fill: leftVideoTopControlArrowLeftBut
                                 onClicked: {
-                                    PlayerControls.leftMinSeek(listViewPopupMin.model.get(customComboboxPaneMin.selectedItem).value)
+                                    VideoControls.leftMinSeek(listViewPopupMin.model.get(customComboboxPaneMin.selectedItem).value)
                                 }
                             }
                         }
@@ -314,7 +314,7 @@ Pane{
                                 hoverEnabled: true
                                 anchors.fill: leftVideoTopControlArrowRightBut
                                 onClicked: {
-                                    PlayerControls.rightMinSeek(listViewPopupMin.model.get(customComboboxPaneMin.selectedItem).value)
+                                    VideoControls.rightMinSeek(listViewPopupMin.model.get(customComboboxPaneMin.selectedItem).value)
                                 }
                             }
                         }
@@ -520,7 +520,7 @@ Pane{
                                 hoverEnabled: true
                                 anchors.fill: middleVideoTopControlArrowLeftBut
                                 onClicked: {
-                                    PlayerControls.leftSecSeek(listViewPopupSec.model.get(customComboboxPaneSec.selectedItem).value)
+                                    VideoControls.leftSecSeek(listViewPopupSec.model.get(customComboboxPaneSec.selectedItem).value)
                                 }
                             }
                         }
@@ -557,7 +557,7 @@ Pane{
                                 hoverEnabled: true
                                 anchors.fill: middleVideoTopControlArrowRightBut
                                 onClicked: {
-                                    PlayerControls.rightSecSeek(listViewPopupSec.model.get(customComboboxPaneSec.selectedItem).value)
+                                    VideoControls.rightSecSeek(listViewPopupSec.model.get(customComboboxPaneSec.selectedItem).value)
                                 }
                             }
 
@@ -691,7 +691,7 @@ Pane{
                                 hoverEnabled: true
                                 anchors.fill: rightRightVideoTopControlLeftBrackBut
                                 onClicked:{
-                                    PlayerControls.getStartTimeSegment()
+                                    VideoControls.getStartTimeSegment()
                                 }
                             }
                         }
@@ -723,7 +723,7 @@ Pane{
                                 hoverEnabled: true
                                 anchors.fill: rightRightVideoTopControlRightBrackBut
                                 onClicked: {
-                                    PlayerControls.getEndTimeSegment()
+                                    VideoControls.getEndTimeSegment()
                                 }
                             }
                         }
@@ -811,6 +811,97 @@ Pane{
                     text: Status.statusText
                 }
 
+                RoundButton{
+                    id: volumeBut
+                    anchors.right: volumeSliderPane.left
+                    anchors.leftMargin: 5
+                    Layout.preferredHeight: 20
+                    Layout.preferredWidth: 20
+                    highlighted: true
+                    Universal.theme: Universal.Dark
+                    Universal.accent: "#2e2a39"
+                    font.pointSize: 12
+                    padding: 0
+                    leftPadding: 3
+                    topPadding: -2
+
+                    Image {
+                        height: 15
+                        width: 15
+                        x: (parent.width - 20) / 2
+                        y: (parent.height - 15) / 2
+                        fillMode: Image.PreserveAspectFit
+                        source: volumeSlider.value == 0 ? "static/mute.svg" : "static/volume.svg"
+                    }
+
+                    background: Rectangle{
+                        anchors.fill: parent
+                        color: "transparent"
+                        radius: parent.height / 2
+                    }
+
+                    MouseArea{
+                        id: volumeButMouse
+                        hoverEnabled: true
+                        anchors.fill: volumeBut
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            VideoControls.volumeMute()
+                        }
+                    }
+                }
+
+                Pane{
+                    id: volumeSliderPane
+                    Layout.preferredWidth: 120
+                    Layout.preferredHeight: 20
+                    anchors.right: extractBut.left
+                    padding: 0
+                    leftPadding: 0
+                    rightPadding: 10
+                    Universal.background: "transparent"
+
+                    Slider{
+                        id: volumeSlider
+                        anchors.fill: parent
+                        from: 0
+                        to: 100
+                        stepSize: 1
+                        value: VideoControls.volume
+
+                        handle: Rectangle{
+                            id: volumeSliderHandle
+                            x: volumeSlider.leftPadding + volumeSlider.visualPosition * (volumeSlider.availableWidth - width)
+                            y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
+                            color: "#fbfbfd"
+                            border.width: 0
+                            implicitWidth: 2
+                            implicitHeight: 24
+                        }
+                        background: Rectangle{
+                            x: volumeSlider.leftPadding
+                            y: volumeSlider.topPadding + volumeSlider.availableHeight / 2 - height / 2
+                //                            implicitWidth: volumeSlider.availableWidth
+                            implicitHeight: 6
+                            width: volumeSlider.availableWidth
+                            height: implicitHeight
+                            color: "#2a2927"
+                            radius: 3
+
+                            Rectangle {
+                                width: volumeSlider.visualPosition * parent.width
+                                height: parent.height
+                                color: "#246bd5"
+                                radius: 2
+                            }
+                        }
+
+                        onMoved: {
+                            VideoControls.volumeChange(value)
+                        }
+                    }
+                }
+
                 Button{
                     id: extractBut
                     width: 133
@@ -820,7 +911,7 @@ Pane{
 
                     Text{
                         text: {
-                            if (PlayerControls.extractingState == 1){
+                            if (VideoControls.extractingState == 1){
                                 "EXTRACTING..."
                             } else {
                                 "EXTRACT"
@@ -829,7 +920,7 @@ Pane{
                         y: (parent.height -15) / 2
                         color: "white"
                         x: {
-                            if (PlayerControls.extractingState == 1){
+                            if (VideoControls.extractingState == 1){
                                 40
                             } else {
                                 50
@@ -849,7 +940,7 @@ Pane{
                         implicitWidth: parent.width
                         implicitHeight: parent.height
                         color: {
-                            if (PlayerControls.extractingState == 1){
+                            if (VideoControls.extractingState == 1){
                                 "gray"
                             } else {
                                 if (extractButMouse.pressed){
@@ -861,7 +952,7 @@ Pane{
                         }
                         radius: parent.height / 2
                         border.width: {
-                            if (PlayerControls.extractingState == 0 && extractBut.hovered){
+                            if (VideoControls.extractingState == 0 && extractBut.hovered){
                                 2
                             } else{
                                 0
@@ -875,9 +966,8 @@ Pane{
                         hoverEnabled: true
                         anchors.fill: extractBut
                         onClicked: {
-                            if (PlayerControls.extractingState == 0) {
-                                 PlayerControls.extract()
-                                 labelExtracting.text = "Extracting..."
+                            if (VideoControls.extractingState == 0) {
+                                 VideoControls.extract()
                                  timerExtracting.start()
                             }
                         }
@@ -889,7 +979,6 @@ Pane{
                         running: false
                         repeat: false
                         onTriggered: {
-                            labelExtracting.text = "Extracting... ok"
                             timerExtractingOK.start()
                         }
                     }
@@ -912,10 +1001,22 @@ Pane{
                     anchors.right: parent.right
                     highlighted: true
                     Text{
-                        text: "STORE"
+                        text: {
+                            if (VideoControls.storingState == 1){
+                                "STORING..."
+                            } else {
+                                "STORE"
+                            }
+                        }
                         y: (parent.height -15) / 2
                         color: "white"
-                        x: 50
+                        x: {
+                            if (VideoControls.storingState == 1){
+                                40
+                            } else {
+                                50
+                            }
+                        }
                     }
 
                     Image {
@@ -925,15 +1026,29 @@ Pane{
                         y: (parent.height - 15) / 2
                         fillMode: Image.PreserveAspectFit
                         source: "static/up-arrow-upload-button.svg"
-
                     }
-
                     background: Rectangle{
                         implicitWidth: parent.width
                         implicitHeight: parent.height
-                        color: storeButMouse.pressed? "#3b3649" : "#2e2a39"
+                        color: {
+                            if (VideoControls.storingState == 1){
+                                "gray"
+                            } else {
+                                if (storeButMouse.pressed){
+                                    "#3b3649"
+                                } else {
+                                    "#2e2a39"
+                                }
+                            }
+                        }
                         radius: parent.height / 2
-                        border.width: storeBut.hovered? 2 : 0
+                        border.width: {
+                            if (VideoControls.storingState == 0 && storeBut.hovered){
+                                2
+                            } else{
+                                0
+                            }
+                        }
                         border.color: "#534c67"
                     }
 
@@ -941,6 +1056,12 @@ Pane{
                         id: storeButMouse
                         hoverEnabled: true
                         anchors.fill: storeBut
+                        onClicked: {
+                            if (VideoControls.storingState == 0) {
+                                 VideoControls.store()
+                                // timerExtracting.start()
+                            }
+                        }
                     }
                 }
             }

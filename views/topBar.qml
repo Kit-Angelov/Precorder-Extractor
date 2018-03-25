@@ -40,7 +40,7 @@ Pane{
         Pane{
             id: appNamePane
             Layout.preferredHeight: topFrame.height
-            Layout.preferredWidth: topFrame.width - logoPane.width - closeAppBut.width - maximizedAppBut.width  - underAppBut.width - topFrame.leftPadding
+            Layout.preferredWidth: topFrame.width - logoPane.width - closeAppBut.width - maximizedAppBut.width  - underAppBut.width - topFrame.leftPadding - settingsBut.width - logsBut.width
             anchors.left: logoPane.right
             padding: 0
             leftPadding: 12
@@ -71,8 +71,63 @@ Pane{
                    // window.y = window.y + d.y;
                    WindowControls.dragWindow(d.x, d.y)
                 }
+                onDoubleClicked: WindowControls.maximizeWindow()
             }
         }
+
+        Button{
+            id: logsBut
+            width: 40
+            height: 40
+            Text{
+                text: "LOGS"
+                color: "#78757c"
+                font.pixelSize: 13
+                y: (parent.height - 15) / 2
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
+            background: Rectangle{
+                implicitWidth: parent.width
+                implicitHeight: parent.height
+                color: logsBut.hovered? "#2e283e" : "#191622"
+            }
+
+            MouseArea{
+                id: logsButMouse
+                hoverEnabled: true
+                anchors.fill: logsBut
+                onClicked: WindowControls.openLogs()
+            }
+        }
+
+        Button{
+            id: settingsBut
+            width: 40
+            height: 40
+            Image {
+                height: 18
+                width: 18
+                x: (parent.width - 18) / 2
+                y: (parent.height - 18) / 2
+                fillMode: Image.PreserveAspectFit
+                source: "static/settings.svg"
+            }
+
+            background: Rectangle{
+                implicitWidth: parent.width
+                implicitHeight: parent.height
+                color: settingsBut.hovered? "#2e283e" : "#191622"
+            }
+
+            MouseArea{
+                id: settingsButMouse
+                hoverEnabled: true
+                anchors.fill: settingsBut
+                onClicked: WindowControls.openSettings()
+            }
+        }
+
         Button{
             id: underAppBut
             width: 40

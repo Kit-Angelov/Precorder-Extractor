@@ -3,9 +3,15 @@ from PyQt5.QtWidgets import QApplication
 from app import Player
 import logging.config
 import logging
+import os
 
 
 def run():
+    try:
+        os.remove('app.log')
+    except:
+        pass
+
     logging.config.fileConfig('logger.conf')
     logger = logging.getLogger("app")
 

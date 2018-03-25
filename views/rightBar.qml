@@ -56,161 +56,11 @@ Pane{
                                         anchors.fill: parent
                                         spacing: 0
 
-                                        RowLayout{
-                                            id: middleVideoTopControlRow
-                                            anchors.fill: parent
-                                            spacing: 0
-
-                                            Text{
-                                                id: nameAttributeText
-                                                text: "NAME"
-                                                color: "#6b6778"
-                                                font.pointSize: 9
-                                            }
-
-                                            RoundButton{
-                                                id: logsBut
-                                                Layout.preferredHeight: 20
-                                                Layout.preferredWidth: 40
-                                                anchors.right: parent.right
-                                                anchors.top: parent.top
-                                                anchors.rightMargin: 0
-                                                anchors.topMargin: -10
-                                                highlighted: true
-                                                Universal.accent: "#2e2a39"
-                                                font.pointSize: 24
-
-                                                Text{
-                                                    text: "Logs"
-                                                    color: "gray"
-                                                    y: (parent.height -15) / 2
-                                                    x:9
-                                                }
-
-                                                background: Rectangle{
-                                                    anchors.fill: parent
-                                                    color: logsButMouse.pressed? "#3b3649" : "#2e2a39"
-                                                    border.width: logsBut.hovered? 2 : 0
-                                                    border.color: "#534c67"
-                                                }
-
-                                                MouseArea{
-                                                    id: logsButMouse
-                                                    hoverEnabled: true
-                                                    anchors.fill: logsBut
-                                                    onClicked: {
-                                                        logsPopup.open()
-                                                    }
-                                                }
-                                            }
-
-                                            Popup {
-                                                id: logsPopup
-                                                x: -15
-                                                y: -17
-                                                width: rightPane.width - 3
-                                                height: rightPane.height - 3
-                                                padding: 0
-                                                modal: false
-                                                focus: true
-                                                closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent | Popup.CloseOnReleaseOutside
-
-                                                Pane{
-                                                    id: logsPane
-                                                    anchors.fill: parent
-                                                    padding: 0
-                                                    Universal.background: "#cccccc"
-                                                    Universal.theme: Universal.Light
-
-                                                    ColumnLayout{
-                                                        id: logsColumn
-                                                        anchors.fill: parent
-                                                        spacing: 0
-
-                                                        RoundButton{
-                                                            id: logsCloseBut
-                                                            Layout.preferredHeight: 20
-                                                            Layout.preferredWidth: 40
-                                                            anchors.right: parent.right
-                                                            anchors.top: parent.top
-                                                            anchors.rightMargin: 5
-                                                            anchors.topMargin: 5
-                                                            highlighted: true
-                                                            Universal.accent: "#2e2a39"
-                                                            font.pointSize: 24
-
-                                                            Text{
-                                                                text: "Close"
-                                                                color: "gray"
-                                                                y: (parent.height -15) / 2
-                                                                x:6
-                                                            }
-
-                                                            background: Rectangle{
-                                                                anchors.fill: parent
-                                                                color: logsCloseButMouse.pressed? "#3b3649" : "#2e2a39"
-                                                                border.width: logsCloseBut.hovered? 2 : 0
-                                                                border.color: "#534c67"
-                                                            }
-
-                                                            MouseArea{
-                                                                id: logsCloseButMouse
-                                                                hoverEnabled: true
-                                                                anchors.fill: logsCloseBut
-                                                                onClicked: {
-                                                                    logsPopup.close()
-                                                                }
-                                                            }
-                                                        }
-
-                                                        Pane{
-                                                            id: logsTextPane
-                                                            Layout.fillWidth: true
-                                                            Layout.fillHeight: true
-                                                            padding: 0
-                                                            Universal.background: "transparent"
-
-                                                            ScrollView{
-                                                                id: scrollViewLogs
-                                                                anchors.fill: parent
-
-                                                                TextArea{
-                                                                    id: logsArea
-                                                                    Layout.fillWidth: true
-                                                                    height: logsTextPane.height
-                                                                    wrapMode: "WrapAtWordBoundaryOrAnywhere"
-                                                                    color: "#333333"
-                                                                    padding: 15
-                                                                    font.pointSize: 9
-                                                                    background: Rectangle{
-                                                                        color: "transparent"
-                                                                        border.width: 0
-                                                                    }
-                                                                    text: Logs.logs
-                                                                }
-
-                                                                ScrollBar.vertical: ScrollBar {
-                                                                    id: scrollLogsAttribute
-                                                                    parent: scrollViewLogs
-                                                                    x: scrollViewLogs.mirrored ? 0 : scrollViewLogs.width - width
-                                                                    y: scrollViewLogs.topPadding
-                                                                    height: logsArea.height <= logsTextPane.height ? 0 : scrollViewLogs.availableHeight
-                                                                    rightPadding: 5
-                                                                    contentItem: Rectangle{
-                                                                        implicitWidth: 8
-                                                                        radius: width / 2
-                                                                        color: "#3e3a49"
-                                                                    }
-
-                                                                    background: Rectangle{
-                                                                        color: "transparent"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
+                                        Text{
+                                            id: nameAttributeText
+                                            text: "NAME"
+                                            color: "#6b6778"
+                                            font.pointSize: 9
                                         }
 
                                         TextField{
@@ -223,7 +73,14 @@ Pane{
                                                 color: "#fdfdfb"
                                                 border.width: 0
                                             }
-                                            text: SelectedEPG.epgTitle
+                                            text: {
+                                                if (SelectedEPG.epgTitle.length > 30) {
+                                                    return SelectedEPG.epgTitle.substring(0, 30) + "..."
+                                                } else {
+                                                    return SelectedEPG.epgTitle
+                                                }
+                                            }
+                                            readOnly: true
                                         }
                                     }
                                 }
@@ -255,7 +112,7 @@ Pane{
 //                                            Layout.fillHeight: true
                                             Layout.fillWidth: true
                                             Layout.preferredHeight: 35
-                                            property var selectedItem: 0
+                                            property var selectedItem: ListChannels.selectedChannelIndex
                                             padding: 0
 
                                             Rectangle{
@@ -352,7 +209,7 @@ Pane{
                                                                 anchors.fill: parent
                                                                 hoverEnabled: true
                                                                 onClicked: {
-                                                                    customComboboxPane.selectedItem = index
+                                                                    ListChannels.chooseChannel(index)
                                                                     customComboboxPopup.close()
                                                                 }
                                                             }
@@ -453,14 +310,12 @@ Pane{
                                                         radius: width / 2
                                                         color: "#3e3a49"
                                                     }
-
                                                     background: Rectangle{
                                                         color: "transparent"
                                                     }
                                                 }
                                             }
                                         }
-
                                     }
                                 }
                                 Pane{
@@ -499,7 +354,7 @@ Pane{
                                                     border.width: 0
                                                 }
                                                 property var handleCheck: false
-                                                text: calendar.dateEPG
+                                                text: SelectedEPG.epgDate
                                                 onTextChanged: {
                                                     if (endTimeInput.text.length == 8 && startTimeInput.text.length == 8 && dateInput.text.length == 10) {
                                                         rightPane.handleCheck = true
@@ -558,11 +413,9 @@ Pane{
                                                     OldControls.Calendar{
                                                         id: calendar
                                                         anchors.fill: parent
-                                                        property var curDate: SelectedEPG.epgDate
-                                                        property var dateEPG: curDate
                                                         onClicked: {
                                                             popupCalendar.close()
-                                                            curDate = Qt.formatDate(selectedDate, "dd.MM.yyyy")
+                                                            SelectedEPG.changeDateEPG(Qt.formatDate(selectedDate, "dd.MM.yyyy"))
                                                         }
                                                     }
                                                 }
@@ -805,19 +658,77 @@ Pane{
                                             x: (parent.width - 13) / 2
                                             y: (parent.height - 13) / 2
                                             fillMode: Image.PreserveAspectFit
-                                            source: stateDL == 1 ? "static/add-plus-button.svg" : "static/cancel.svg"
+                                            source: {
+                                                if (stateDL == 1 || stateST == 1){
+                                                    "static/add-plus-button.svg"
+                                                } else {
+                                                    "static/cancel.svg"
+                                                }
+                                            }
                                         }
                                         background: Rectangle{
                                             anchors.fill: parent
-                                            color: {
-                                                if (stateDL == 2){
-                                                    "#1b80e4"
-                                                } else if(stateDL == 1){
-                                                    "gray"
-                                                } else if(stateDL == 0 && elemTimesAddingButMouse.pressed) {
-                                                    "#666666"
+
+                                        //    color: {
+                                        //        if (stateDL == 2){
+                                        //            "#1b80e4"
+                                         //       } else if(stateDL == 1){
+                                         //           "gray"
+                                         //       } else if(stateDL == 0 && elemTimesAddingButMouse.pressed) {
+                                         //           "#666666"
+                                         //       } else {
+                                         //           "gray"
+                                          //      }
+                                          //  }
+
+                                            gradient: Gradient {
+                                                GradientStop {
+                                                    position: 0.0
+                                                    color: {
+                                                        if (stateDL != 2 || stateST != 2){
+                                                            "gray"
+                                                        } else {
+                                                            "#1359a0"
+                                                        }
+                                                    }
+                                                }
+                                                GradientStop {
+                                                    position: 0.3
+                                                    color: {
+                                                        if (stateDL != 2 || stateST != 2){
+                                                            "gray"
+                                                        } else {
+                                                            "#1359a0"
+                                                        }
+                                                    }
+                                                }
+                                                GradientStop {
+                                                    position: 0.5
+                                                    color: {
+                                                        if (stateDL == 2 || stateST == 2){
+                                                            "#1359a0"
+                                                        } else {
+                                                            "gray"
+                                                        }
+                                                    }
+                                                }
+                                                GradientStop {
+                                                    position: 1.0
+                                                    color: {
+                                                        if (stateDL == 2 || stateST == 2){
+                                                            "#1359a0"
+                                                        } else {
+                                                            "gray"
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            rotation: {
+                                                if (stateDL == 2 && stateST != 2){
+                                                    90
                                                 } else {
-                                                    "gray"
+                                                    270
                                                 }
                                             }
                                             radius: parent.height / 2

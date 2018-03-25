@@ -2,9 +2,13 @@
     Qt-based model Channel and EPG
 """
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, pyqtProperty
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, pyqtProperty, QPoint
 from PyQt5.QtQml import QQmlListProperty
 from services import getChannels, getEpgList
+import config
+import os, io
+from controllers import utils
+from models import models
 
 
 class Channel(QObject):
@@ -45,20 +49,36 @@ class Channel(QObject):
 
 class ListChannels(QObject):
     listChannels = pyqtSignal()
+    selectedChannelIndexSignal = pyqtSignal()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, connectLabel, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.connectLabel = connectLabel
         self._channels = []
+        self._channelIndex = 0
         self.setChannel()
 
     def setChannel(self):
-        channels = getChannels()
+        self._channels = []
+        channels = getChannels(self.connectLabel)
         for channel in channels:
             self._channels.append(Channel(channel))
+        self.listChannels.emit()
 
     @pyqtProperty(QQmlListProperty, notify=listChannels)
     def channels(self):
         return QQmlListProperty(Channel, self, self._channels)
+
+    @pyqtProperty(int, notify=selectedChannelIndexSignal)
+    def selectedChannelIndex(self):
+        return self._channelIndex
+
+    chooseChannelSingal = pyqtSignal(int, arguments=['chooseChannel'])
+
+    @pyqtSlot(int)
+    def chooseChannel(self, index):
+        self._channelIndex = index
+        self.selectedChannelIndexSignal.emit()
 
 
 class EPG(QObject):
@@ -130,6 +150,13 @@ class ListEpg(QObject):
         self.address = None
         self.query = None
 
+    def updateEpg(self):
+        self.listEpg.emit()
+
+    def clearEpg(self):
+        self._epglist = []
+        self.updateEpg()
+
     def setEpg(self, address=None, query=None):
         self.address = address
         self._epglist = []
@@ -196,6 +223,13 @@ class SelectedEPG(QObject):
     def epgEndTime(self):
         return self._end_time
 
+    ChangeDateEPGSignal = pyqtSignal(str, arguments=['changeDateEPG'])
+
+    @pyqtSlot(str)
+    def changeDateEPG(self, date):
+        self._date = date
+        self.epgDateSignal.emit()
+
     def setSelectedEPG(self, epg):
         self._title = epg._epg_title
         self._description = epg._epg_description
@@ -220,6 +254,7 @@ class SegmentPosition(QObject):
         self._title = title
         self._id = id
         self._stateDL = 0
+        self._stateST = 0
 
     startTimeSignal = pyqtSignal()
     endTimeSignal = pyqtSignal()
@@ -229,6 +264,7 @@ class SegmentPosition(QObject):
     titleSignal = pyqtSignal()
     idSignal = pyqtSignal()
     stateDLSignal = pyqtSignal()
+    stateSTSignal = pyqtSignal()
 
     @pyqtProperty('QString', notify=startTimeSignal)
     def startTime(self):
@@ -262,6 +298,10 @@ class SegmentPosition(QObject):
     def stateDL(self):
         return self._stateDL
 
+    @pyqtProperty(int, notify=stateSTSignal)
+    def stateST(self):
+        return self._stateST
+
     def setStartTime(self, startTime, startTimestamp):
         self._startTime = startTime
         self._startTimestamp = startTimestamp
@@ -282,6 +322,10 @@ class SegmentPosition(QObject):
     def changeState(self, state):
         self._stateDL = int(state)
         self.stateDLSignal.emit()
+
+    def changeStateStore(self, state):
+        self._stateST = int(state)
+        self.stateSTSignal.emit()
 
 
 class ListSegmentPostiton(QObject):
@@ -347,21 +391,234 @@ class ListSegmentPostiton(QObject):
         self.listSegmentPosition.emit()
 
 
-class Logs(QObject):
-    logSignal = pyqtSignal()
+class AppLogs(QObject):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, logWidget, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._logsStr = ''
+        self.logWidget = logWidget
+        self.appLogsIO = None
+        self.vlcLogsIO = None
+        self._appLogsStr = ''
+        self._vlcLogsStr = ''
+        self._maximizeState = False
+        self.currentCP = self.logWidget.startCP
+        self.openLogs()
 
-    @pyqtProperty('QString', notify=logSignal)
-    def logs(self):
-        return self._logsStr
+    def openLogs(self):
+        try:
+            self.appLogsIO = io.open('app.log', 'r', buffering=-1, closefd=True)
+        except:
+            pass
+        try:
+            self.vlcLogsIO = io.open('vlc.log', 'r', buffering=-1, closefd=True)
+        except:
+            pass
+
+    appLogSignal = pyqtSignal(str, arguments=['appLogs'])
+    vlcLogSignal = pyqtSignal(str, arguments=['vlcLogs'])
 
     def updateLogs(self):
         try:
-            with open('app.log', 'r') as f:
-                self._logsStr = f.read()
+            readableLogs = self.appLogsIO.read()
+            if len(readableLogs) is not 0:
+                self._appLogsStr = readableLogs
+                self.appLogSignal.emit(self._appLogsStr)
         except:
             pass
-        self.logSignal.emit()
+        try:
+            readableLogs = self.vlcLogsIO.read()
+            if len(readableLogs) is not 0:
+                self._vlcLogsStr = readableLogs
+                self.vlcLogSignal.emit(self._vlcLogsStr)
+        except:
+            pass
+
+    clearLogsSignal = pyqtSignal(arguments=['clearLogs'])
+
+    @pyqtSlot()
+    def clearLogs(self):
+        try:
+            f = open('app.log', 'w')
+            f.close()
+        except:
+            pass
+        try:
+            f = open('vlc.log', 'w')
+            f.close()
+        except:
+            pass
+        self.updateLogs()
+
+    closeWindowSignal = pyqtSignal(arguments=['closeWindow'])
+
+    @pyqtSlot()
+    def closeWindow(self):
+        self.logWidget.close()
+
+    minimizeWindowSignal = pyqtSignal(arguments=['minimizeWindow'])
+
+    @pyqtSlot()
+    def minimizeWindow(self):
+        self.logWidget.showMinimized()
+
+    maximizeWindowSignal = pyqtSignal(arguments=['maximizeWindow'])
+
+    @pyqtSlot()
+    def maximizeWindow(self):
+        if self._maximizeState:
+            self.logWidget.resize(self.logWidget.width, self.logWidget.height)
+            self.logWidget.move(self.currentCP)
+        else:
+            self.logWidget.resize(self.logWidget.screenSize.width(), self.logWidget.screenSize.height())
+            self.logWidget.move(QPoint(0, 0))
+        self._maximizeState = not self._maximizeState
+        self.maximizeStateSignal.emit()
+
+    maximizeStateSignal = pyqtSignal()
+
+    @pyqtProperty(int, notify=maximizeStateSignal)
+    def maximizeState(self):
+        return int(self._maximizeState)
+
+    dragWindowSingal = pyqtSignal(int, int, arguments=['dragWindow'])
+
+    @pyqtSlot(int, int)
+    def dragWindow(self, attr1, attr2):
+        oldPos = self.logWidget.pos()
+        cp = QPoint(oldPos.x() + attr1, oldPos.y() + attr2)
+        self.currentCP = cp
+        self.logWidget.move(cp)
+
+
+class AppSettings(QObject):
+
+    def __init__(self, mainWindow, settingsWidget, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mainWindow = mainWindow
+        self.settingsWidget = settingsWidget
+        self._maximizeState = False
+        self.currentCP = self.settingsWidget.startCP
+
+    closeWindowSignal = pyqtSignal(arguments=['closeWindow'])
+
+    @pyqtSlot()
+    def closeWindow(self):
+        self.settingsWidget.close()
+
+    minimizeWindowSignal = pyqtSignal(arguments=['minimizeWindow'])
+
+    @pyqtSlot()
+    def minimizeWindow(self):
+        self.settingsWidget.showMinimized()
+
+    maximizeWindowSignal = pyqtSignal(arguments=['maximizeWindow'])
+
+    @pyqtSlot()
+    def maximizeWindow(self):
+        if self._maximizeState:
+            self.settingsWidget.resize(self.settingsWidget.width, self.settingsWidget.height)
+            self.settingsWidget.move(self.currentCP)
+        else:
+            self.settingsWidget.resize(self.settingsWidget.screenSize.width(), self.settingsWidget.screenSize.height())
+            self.settingsWidget.move(QPoint(0, 0))
+        self._maximizeState = not self._maximizeState
+        self.maximizeStateSignal.emit()
+
+    maximizeStateSignal = pyqtSignal()
+
+    @pyqtProperty(int, notify=maximizeStateSignal)
+    def maximizeState(self):
+        return int(self._maximizeState)
+
+    dragWindowSingal = pyqtSignal(int, int, arguments=['dragWindow'])
+
+    @pyqtSlot(int, int)
+    def dragWindow(self, attr1, attr2):
+        oldPos = self.settingsWidget.pos()
+        cp = QPoint(oldPos.x() + attr1, oldPos.y() + attr2)
+        self.currentCP = cp
+        self.settingsWidget.move(cp)
+
+    currentHostSignal = pyqtSignal()
+
+    @pyqtProperty('QString', notify=currentHostSignal)
+    def currentHost(self):
+        return config.getHost()
+
+    currentPortSignal = pyqtSignal()
+
+    @pyqtProperty('QString', notify=currentPortSignal)
+    def currentPort(self):
+        return config.getPort()
+
+    currentFolderSignal = pyqtSignal()
+
+    @pyqtProperty('QString', notify=currentFolderSignal)
+    def currentFolder(self):
+        return config.getSavePath()
+
+    currentStoreFolderSignal = pyqtSignal()
+
+    @pyqtProperty('QString', notify=currentStoreFolderSignal)
+    def currentStoreFolder(self):
+        return config.getStorePath()
+
+    changeHostAndPortSignal = pyqtSignal(str, str, arguments=['changeHostAndPort'])
+
+    @pyqtSlot(str, str)
+    def changeHostAndPort(self, host, port):
+        config.setConfig('URL', 'host', host)
+        config.setConfig('URL', 'port', port)
+        self.currentHostSignal.emit()
+        self.currentPortSignal.emit()
+        self.mainWindow.listChannels.setChannel()
+        try:
+            self.mainWindow.listEpg.setEpg(address=self.mainWindow.listChannels._channels[0]._channel_address)
+            self.mainWindow.listEpg.updateEpg()
+        except:
+            self.mainWindow.listEpg.clearEpg()
+        self.mainWindow.videoControls.stopped()
+        utils.clearVideoFrame(self.mainWindow)
+        self.mainWindow.child_position = None
+        self.mainWindow.child_epg = None
+        self.mainWindow.custom_epg = False
+        self.mainWindow.media_state = False
+        self.mainWindow.listSegmentPostiton.deleteAllSegment()
+        self.mainWindow.current_epg_obj = None
+        self.mainWindow.focusState.setMediaSetState(0)
+
+        emptyEpgObj = models.EPG.create()
+        emptyEpgQObj = EPG(emptyEpgObj)
+        self.mainWindow.selectedEPG.setSelectedEPG(emptyEpgQObj)
+
+    changeSavePathSignal = pyqtSignal(str, arguments=['changeSavePath'])
+
+    @pyqtSlot(str)
+    def changeSavePath(self, path):
+        holyPath = path[8:]
+        config.setConfig('SAVE', 'path', holyPath)
+        self.currentFolderSignal.emit()
+
+    changeStorePathSignal = pyqtSignal(str, arguments=['changeStorePath'])
+
+    @pyqtSlot(str)
+    def changeStorePath(self, path):
+        holyPath = path[8:]
+        config.setConfig('STORE', 'path', holyPath)
+        self.currentStoreFolderSignal.emit()
+
+# class ReaderLogs(threading.Thread):
+#
+#     def __init__(self, pathUrl, path_to_save):
+#         super().__init__()
+#         self.state = False
+#         self.pathUrl = pathUrl
+#         self.path_to_save = path_to_save
+#
+#     def run(self):
+#         r = requests.get(self.pathUrl, stream=True)
+#         if r.status_code == 200:
+#             with open(self.path_to_save, "wb") as f:
+#                 for chunk in r.iter_content(1024):
+#                     f.write(chunk)
+#         self.state = True

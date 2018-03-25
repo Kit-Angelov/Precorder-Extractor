@@ -7,11 +7,11 @@ import config
 
 class Channel:
 
-    address = None
-    recorderId = None
-    recorderIp = None
-    recorderPort = None
-    name = None
+    address = ''
+    recorderId = ''
+    recorderIp = ''
+    recorderPort = ''
+    name = ''
 
     @classmethod
     def create(cls, **kwargs):
@@ -27,17 +27,17 @@ class Channel:
 
 
 class EPG:
-    title = None
-    date = None
-    startTime = None
-    endTime = None
-    eventId = None
-    duration = None
-    recorder = None
-    description = None
-    id = None
-    image = None
-    chName = None
+    title = ''
+    date = ''
+    startTime = ''
+    endTime = ''
+    eventId = ''
+    duration = ''
+    recorder = ''
+    description = ''
+    id = ''
+    image = ''
+    chName = ''
 
 
     @classmethod

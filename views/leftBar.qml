@@ -335,7 +335,13 @@ Pane{
                                                     spacing: 0
 
                                                     Text{
-                                                        text: title
+                                                        text: {
+                                                            if (title.length > 23) {
+                                                                return title.substring(0, 23) + "..."
+                                                            } else {
+                                                                return title
+                                                            }
+                                                        }
                                                         font.pointSize: 9
                                                         color: "#ece9f4"
                                                         topPadding: -4
@@ -380,9 +386,10 @@ Pane{
                                 hoverEnabled: true
                                 anchors.fill: parent
                                 onClicked: {
-                                                wraplistMediaPane.choosedIndex = index
-                                                PlayerControls.chooseEPG(startTime, endTime, date, recorder, id, title, index)
-                                            }
+                                    wraplistMediaPane.choosedIndex = index
+                                    PlayerControls.chooseEPG(startTime, endTime, date, recorder, id, title, index)
+                                    ListChannels.chooseChannel(customComboboxPaneChannel.selectedItem)
+                                }
                             }
                         }
                     }
